@@ -1,44 +1,45 @@
 
 SELECT *
-FROM PortfolioProject..CovidDeaths
+FROM PortfolioProject..CovidDeaths_View
 ORDER BY 3,4
 
 SELECT *
-FROM PortfolioProject..CovidDeaths
+FROM PortfolioProject..CovidDeaths_View
 WHERE continent IS NOT NULL
 ORDER BY 3,4
 
 SELECT *
-FROM PortfolioProject..CovidDeaths
+FROM PortfolioProject..CovidDeaths_View
 ORDER BY 3,4
 
 -- Select Data that we are going to be using
 SELECT location, date, total_cases, new_cases, total_deaths, population
-FROM PortfolioProject..CovidDeaths
+FROM PortfolioProject..CovidDeaths_View
 ORDER BY 1,2
 
 
 -- Looking at Total Cases vs Total Deaths
 -- Show likelihood of dying if you contract covid in your country
-SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as DeathPercentage
-FROM PortfolioProject..CovidDeaths
+SELECT location, date, total_cases, total_deaths,
+CASE WHEN total_cases > 0 THEN (total_deaths/total_cases) ELSE 0 END *100 as DeathPercentage
+FROM PortfolioProject..CovidDeaths_View
 WHERE location like '%states%'
 AND continent IS NOT NULL
-ORDER BY 1,2
--- ERROR
+ORDER BY 1,2 DESC
 
-
-SELECT location, date, total_cases, total_deaths, ((cast(total_deaths as int))/total_cases)*100 as DeathPercentage
-FROM PortfolioProject..CovidDeaths
+SELECT location, date, total_cases, total_deaths,
+CASE WHEN total_cases > 0 THEN (total_deaths/total_cases) ELSE 0 END *100 as DeathPercentage
+FROM PortfolioProject..CovidDeaths_View
 WHERE location like '%states%'
 AND continent IS NOT NULL
 ORDER BY 5 DESC
--- WRONG RESULT
 
 
+-- before creating View for CovidDeaths
 SELECT location, date, total_cases, total_deaths,
 CASE WHEN CAST(ISNULL(total_cases,0) AS Decimal(27,8)) > 0 THEN 
 (CAST(ISNULL(total_deaths,0) AS Decimal(27,8))/CAST(ISNULL(total_cases,0) AS Decimal(27,8))) ELSE 0 
+-- CASE WHEN ISNULL(total_cases,0) > 0 THEN ISNULL(population,0)/ISNULL(total_cases,0) ELSE 0 
 END *100 as DeathPercentage
 FROM PortfolioProject..CovidDeaths
 WHERE location like '%states%'
@@ -48,26 +49,23 @@ ORDER BY 1,2
 
 -- Looking at Total Cases vs Population
 -- Shows what percentage of population got covid
-SELECT location, date, population, total_cases, (total_deaths/total_cases)*100 as PercentPopulationInfected
-FROM PortfolioProject..CovidDeaths
+SELECT location, date, population, total_cases,
+CASE WHEN total_cases > 0 THEN (total_deaths/total_cases) ELSE 0 END *100 as PercentPopulationInfected
+FROM PortfolioProject..CovidDeaths_View
 WHERE location like '%states%'
 AND continent IS NOT NULL
 ORDER BY 1,2
--- ERROR
 
 SELECT location, date, population, total_cases, 
--- CASE WHEN CAST(ISNULL(total_cases,0) AS Decimal(27,8)) > 0 THEN 
--- (CAST(ISNULL(population,0) AS Decimal(27,8))/CAST(ISNULL(total_cases,0) AS Decimal(27,8)))
-CASE WHEN ISNULL(total_cases,0) > 0 THEN ISNULL(population,0)/ISNULL(total_cases,0) ELSE 0 
-END *100 as PercentPopulationInfected
-FROM PortfolioProject..CovidDeaths
+CASE WHEN total_cases > 0 THEN (population/total_cases) ELSE 0 END *100 as PercentPopulationInfected
+FROM PortfolioProject..CovidDeaths_View
 WHERE location like '%states%'
 AND continent IS NOT NULL
 ORDER BY 1,2
 
 -- Looking at Countries with Highest Infection Rate compared to Population
 SELECT location, population, MAX(total_cases) as HighestInfectionCount, MAX((total_cases/population))*100 as PercentPopulationInfected
-FROM PortfolioProject..CovidDeaths
+FROM PortfolioProject..CovidDeaths_View
 -- WHERE location like '%states%'
 WHERE continent IS NOT NULL
 GROUP BY location, population
@@ -76,15 +74,15 @@ ORDER BY PercentPopulationInfected DESC
 
 -- Showing Countries with Highest Death Count per Population
 -- total_deaths data type is nvarchar so we have to 
-SELECT location, population, MAX(cast(total_deaths as int)) as TotalDeathCount
-FROM PortfolioProject..CovidDeaths
+-- MAX(cast(total_deaths as int)) if total_deaths is nvarchar
+SELECT location, population, MAX(total_deaths) as TotalDeathCount
+FROM PortfolioProject..CovidDeaths_View
 -- WHERE location like '%states%'
 WHERE continent IS NOT NULL
 GROUP BY location, population
 ORDER BY TotalDeathCount DESC
 
--- I added this myself
-SELECT location, population, MAX(cast(total_deaths as int)) as TotalDeathCount, MAX((total_deaths/population))*100 as PercentPopulationDeath
+SELECT location, population, MAX(total_deaths) as TotalDeathCount, MAX((total_deaths/population))*100 as PercentPopulationDeath
 FROM PortfolioProject..CovidDeaths
 -- WHERE location like '%states%'
 WHERE continent IS NOT NULL
@@ -93,8 +91,8 @@ ORDER BY TotalDeathCount DESC, PercentPopulationDeath DESC
 
 -- Let's break things down by continent
 -- Showing continents with the highest death count per population
-SELECT continent, MAX(cast(total_deaths as int)) as TotalDeathCount
-FROM PortfolioProject..CovidDeaths
+SELECT continent, MAX(total_deaths) as TotalDeathCount
+FROM PortfolioProject..CovidDeaths_View
 -- WHERE location like '%states%'
 WHERE continent IS NOT NULL
 GROUP BY continent
@@ -116,7 +114,8 @@ ORDER BY TotalDeathCount DESC
 
 -- Global Numbers
 SELECT date, SUM(new_cases) AS total_cases, SUM(new_deaths) AS total_deaths, 
-(SUM(new_deaths)/SUM(new_cases))*100 AS DeathPercentage
+CASE WHEN SUM(new_cases) > 0 THEN (SUM(new_deaths)*100 / SUM(new_cases)) ELSE 0 
+END AS DeathPercentage
 FROM PortfolioProject..CovidDeaths_View
 -- WHERE location like '%states%'
 WHERE continent IS NOT NULL

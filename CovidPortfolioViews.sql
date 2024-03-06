@@ -29,8 +29,8 @@ SELECT ISNULL([iso_code], '') AS iso_code
       ,CAST(ISNULL([weekly_hosp_admissions_per_million], 0) AS float) AS weekly_hosp_admissions_per_million
   FROM [dbo].[CovidDeaths]
 
-use PortfolioProject
 
+USE PortfolioProject
 CREATE VIEW CovidVaccinations_View AS
 SELECT	ISNULL([iso_code], '') AS iso_code,
 		ISNULL([continent], '') AS continent,
@@ -77,8 +77,6 @@ SELECT	ISNULL([iso_code], '') AS iso_code,
 		CAST(ISNULL(excess_mortality, 0) AS FLOAT) as excess_mortality,
 		CAST(ISNULL(excess_mortality_cumulative_per_million, 0) AS FLOAT) as excess_mortality_cumulative_per_million
 FROM [PortfolioProject]..[CovidVaccinations]
-
-Select Top 10 * FROM [PortfolioProject]..[CovidVaccinations]
 
 SELECT * 
 FROM sys.views 
